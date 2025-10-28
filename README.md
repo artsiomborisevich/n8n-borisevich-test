@@ -16,8 +16,6 @@ gradlew.bat test
 
 - **Health Check**: `GET http://localhost:8080/api/health`
 
-## Updated to check n8n changes
-
 ## Building the Application
 
 ```bash
