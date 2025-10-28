@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: n8n-borisevich-test
+
+server:
+  port: 8080
+
