@@ -12,6 +12,13 @@ Run all tests:
 gradlew.bat test
 ```
 
+## Running the Application
+
+### Using Gradle Wrapper (Windows)
+```bash
+gradlew.bat bootRun
+```
+
 ## Endpoints
 
 - **Health Check**: `GET http://localhost:8080/api/health`
