@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: n8n-borisevich-test-app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  n8n:
+    build:
+      context: ./n8n-docker
+    container_name: n8n-duty-agent
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin123
+      - GENERIC_TIMEZONE=Europe/Moscow
+      - TZ=Europe/Moscow
+      - N8N_HOST=${N8N_PUBLIC_URL_HOST}
+      - WEBHOOK_URL=${N8N_PUBLIC_URL}
+    volumes:
+      - n8n_data:/root/.n8n
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      - app
+    user: "root"
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok-tunnel-agent
+    ports:
+      - "4040:4040"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command: [ "http", "n8n:5678" ]
+    networks:
+      - app-network
+    depends_on:
+      - n8n
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  n8n_data:
+    external:
+      name: n8n-borisevich-test_n8n_data
+
