@@ -1,0 +1,261 @@
+{
+  "name": "Website Duty Agent - Task 2 (AI Debugging)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://app:8080/",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "id": "http-request",
+      "name": "Check Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "options": {}
+      },
+      "id": "ai-analyze",
+      "name": "AI Diagnostic Agent with Docker",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.3,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "name": "docker",
+        "description": "Execute Docker commands to investigate container issues. Input should be the full docker command as a string. Supported: 'docker ps', 'docker logs', 'docker inspect', 'docker stats'. Always include container name 'n8n-borisevich-test-app'.",
+        "code": "// The query parameter contains the Docker command to execute\nconst command = query;\n\n// Security: only allow specific docker commands\nconst allowedCommands = [\n  'docker ps',\n  'docker logs',\n  'docker inspect',\n  'docker stats'\n];\n\nconst isAllowed = allowedCommands.some(cmd => command.trim().startsWith(cmd));\n\nif (!isAllowed) {\n  return `Error: Command not allowed. Only these commands are permitted: ${allowedCommands.join(', ')}`;\n}\n\n// Execute the Docker command\nconst { execSync } = require('child_process');\n\ntry {\n  const output = execSync(command, { \n    encoding: 'utf-8',\n    timeout: 10000,\n    maxBuffer: 10 * 1024 * 1024 // 10MB buffer\n  });\n  return output || 'Command executed successfully but no output';\n} catch (error) {\n  return `Error executing '${command}': ${error.message}\\nStderr: ${error.stderr || 'none'}`;\n}"
+      },
+      "id": "docker-tool",
+      "name": "Docker Command Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [650, 500]
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [1050, 500],
+      "id": "memory-buffer",
+      "name": "Memory Buffer"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [850, 500],
+      "id": "gemini-model",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_GEMINI_CREDENTIAL_ID",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiOutput = $json.output || '{}';\nlet parsed;\n\ntry {\n  // Try to parse the AI output as JSON\n  parsed = JSON.parse(aiOutput);\n} catch (e) {\n  // If parsing fails, try to extract JSON from markdown code blocks\n  const jsonMatch = aiOutput.match(/```(?:json)?\\s*({[\\s\\S]*?})\\s*```/);\n  if (jsonMatch) {\n    try {\n      parsed = JSON.parse(jsonMatch[1]);\n    } catch (e2) {\n      // Still failed, use fallback\n      parsed = {\n        status: aiOutput.toLowerCase().includes('\"status\":\"ok\"') || aiOutput.toLowerCase().includes('\"status\": \"ok\"') ? 'OK' : 'DOWN',\n        diagnosis: aiOutput,\n        cause: 'Unable to parse AI response',\n        action: 'Check logs manually',\n        commands_used: []\n      };\n    }\n  } else {\n    // No JSON found, use fallback\n    parsed = {\n      status: aiOutput.toLowerCase().includes('\"status\":\"ok\"') || aiOutput.toLowerCase().includes('\"status\": \"ok\"') ? 'OK' : 'DOWN',\n      diagnosis: aiOutput,\n      cause: 'Unable to parse AI response',\n      action: 'Check logs manually',\n      commands_used: []\n    };\n  }\n}\n\nreturn {\n  json: {\n    status: parsed.status || 'DOWN',\n    diagnosis: parsed.diagnosis || 'No diagnosis provided',\n    cause: parsed.cause || 'Unknown',\n    action: parsed.action || 'Manual investigation required',\n    commands_used: parsed.commands_used || [],\n    timestamp: new Date().toISOString(),\n    httpStatus: $('Check Website').item.json.statusCode || 'No response',\n    rawAiOutput: aiOutput\n  }\n};"
+      },
+      "id": "parse-ai-response",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-1",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "DOWN",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-if-alert-needed",
+      "name": "Alert Needed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {},
+      "id": "no-alert",
+      "name": "Site OK - No Alert",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🚨 ALERT: Website is DOWN!\n\n⏰ Time: {{ $json.timestamp }}\n🌐 URL: http://app:8080/\n📊 HTTP Status: {{ $json.httpStatus }}\n\n🔍 AI DIAGNOSIS:\n{{ $json.diagnosis }}\n\n🎯 ROOT CAUSE:\n{{ $json.cause }}\n\n🛠️ RECOMMENDED ACTION:\n{{ $json.action }}\n\n🔧 Docker Commands Used by AI:\n{{ $json.commands_used.length > 0 ? $json.commands_used.join('\\n') : 'No Docker commands executed' }}\n\n💡 This is an automated AI analysis with adaptive investigation.",
+        "additionalFields": {}
+      },
+      "id": "telegram-enhanced",
+      "name": "Send Alert to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [1250, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Check Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Website": {
+      "main": [
+        [
+          {
+            "node": "AI Diagnostic Agent with Docker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Diagnostic Agent with Docker": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Alert Needed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Needed?": {
+      "main": [
+        [
+          {
+            "node": "Site OK - No Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Alert to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Docker Command Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Diagnostic Agent with Docker",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory Buffer": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Diagnostic Agent with Docker",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Diagnostic Agent with Docker",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-11-01T10:30:00.000Z",
+  "versionId": "2"
+}
+

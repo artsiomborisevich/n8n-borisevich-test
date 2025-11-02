@@ -1,0 +1,80 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "command"
+            }
+          ]
+        }
+      },
+      "id": "c1459f8f-cd0e-475a-ba6c-7efedb45c87a",
+      "typeVersion": 1.1,
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -688,
+        656
+      ],
+      "alwaysOutputData": true,
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    output: $json.stdout?.toString() || '',\n    error: $json.stderr?.toString() || '',\n    exitCode: $json.exitCode ?? null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Normalize Command Output",
+      "position": [
+        -240,
+        656
+      ],
+      "id": "759239b8-3c14-4e27-a661-8f0f2f1be5ad"
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.command }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "name": "Execute Command",
+      "position": [
+        -464,
+        656
+      ],
+      "alwaysOutputData": true,
+      "id": "f97806af-23df-46b9-b925-26d3001b9e40"
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command": {
+      "main": [
+        [
+          {
+            "node": "Normalize Command Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "dab0ff865fb70634ed8e7b418a2101afb1aa889f33d27eaf54cbe64f357a6fdc"
+  }
+}

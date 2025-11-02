@@ -1,0 +1,167 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "defdcf8d-b1d5-48bb-b922-ef65b01dabc8",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -608,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://app:8080/",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "b3522745-db7d-43b8-b251-19d103fde0a4",
+      "name": "Check Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -384,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "condition-1",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "condition-2",
+              "leftValue": "={{ $json.body }}",
+              "rightValue": "SYSTEM ONLINE",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9e14a457-4013-4b1d-8b7e-f2b9226dd22b",
+      "name": "Site is UP?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "1381321310",
+        "text": "=🚨 ALERT: Website is DOWN!\n\nTime: {{ $now.toISO() }}\nStatus: {{ $('Check Website').item.json.statusCode || 'No response' }}\nURL: http://app:8080/\n\nExpected keyword \"SYSTEM ONLINE\" was not found or site is unreachable.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "e567460e-547d-4b5f-be06-fdec90cf5a46",
+      "name": "Send Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        64,
+        192
+      ],
+      "webhookId": "d75ed85e-a851-42d9-9138-d98ed6cdb125",
+      "credentials": {
+        "telegramApi": {
+          "id": "uvzpxIfS6ten68v6",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "dce6ea8c-73a5-4d8f-8cab-c431dc06de40",
+      "name": "Site OK - Do Nothing",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        64,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Check Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Website": {
+      "main": [
+        [
+          {
+            "node": "Site is UP?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Site is UP?": {
+      "main": [
+        [
+          {
+            "node": "Site OK - Do Nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ac1ec4fc462343250bd35255cf8d366745397ea0c585c524410b9790a28d49ad"
+  }
+}
