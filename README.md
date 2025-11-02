@@ -207,6 +207,27 @@ docker stop n8n-borisevich-test-app
 
 ---
 
+### Task 3: AI-Powered Recovery ✅
+
+**Objective:** Add intelligent recovery - recover site AFTER human approval
+
+**Implementation:**
+- AI Agent (Google Gemini) with Docker command execution tools
+- Collects container status, logs, and resource usage
+- Analyzes all data to determine root cause
+- Provides actionable fix recommendations 
+- Human-in-the-loop approval before executing fixes
+- Executes recovery commands upon approval
+- Check if site is back up 
+
+
+**Screenshots:**
+- [AI-Enhanced Recovery Workflow](screenshots/task3-recovery.png)
+- [Human approval](screenshots/task3-approval.png)
+- [App is up](screenshots/task3-app-is-up.png)
+- [Site works](screenshots/site-is-up.png)
+
+
 ## 🚀 Application Endpoints
 
 | Endpoint | Method | Description | Response |

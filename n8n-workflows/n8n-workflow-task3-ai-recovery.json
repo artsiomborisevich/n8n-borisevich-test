@@ -1,0 +1,675 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "chatId": "1381321310",
+        "text": "=🚨 ALERT: Website is DOWN!\n\n🌐 URL: http://app:8080/\n📊 HTTP Status: {{ $json.output.status }}\n\n🔍 AI DIAGNOSIS:\n{{ $json.output.diagnosis }}\n\n🎯 ROOT CAUSE:\n{{ $json.output.cause }}\n\n🛠️ RECOMMENDED ACTION:\n{{ $json.output.action }}\n\n🚀 SUGGESTED COMMAND:\n{{ $json.output.suggestedCommand }}\n\n📋 Recent Logs:\n```\n{{ $json.output.logs }}\n```\n\n💡 This is an automated AI analysis.",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Execute Suggested Command",
+                    "additionalFields": {
+                      "callback_data": "={{ $json.output.suggestedCommand }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "95ba4b3e-e14b-4937-a61c-78bff1c010d8",
+      "name": "Send Alert to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        424
+      ],
+      "webhookId": "1296a8cd-8b7e-4ce0-9a90-c761cd3273ce",
+      "credentials": {
+        "telegramApi": {
+          "id": "uvzpxIfS6ten68v6",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "==You are an intelligent website monitoring agent with Docker access. Your task is to check if the website at http://app:8080/ is working properly.\n\n=== IMPORTANT SAFETY RULES ===\n1. You MAY execute **analysis commands only** to gather information about the system. These include:\n   - docker ps\n   - docker logs <container> --tail=N\n   - docker inspect <container>\n   - curl <url>\n   - Any command that does NOT change the container or application state\n2. You MUST NOT execute any **state-changing commands** automatically. These include:\n   - docker start/stop/restart <container>\n   - Any command that changes container or app state\n3. If you identify a state-changing action is needed, include it ONLY in the \"suggestedCommand\" field. It will be executed **ONLY after human approval** via Telegram button.\n\n=== INITIAL WEBSITE CHECK ===\nHTTP Status Code: {{ $json.statusCode  || 'Connection Failed' }}\nResponse Body Preview: {{ $json.body || 'No body received' }}\nError Message: {{$json.error || 'None' }}\nError Code: {{ $json.errorCode|| 'None' }}\nTimestamp: {{ $now.toISO() }}\n\n=== YOUR DOCKER TOOLS ===\nYou have access to Docker commands. Use SIMPLE commands without JSON formatting:\n\n1. Check container status, \n2. Get container logs,\n3. Inspect container,\n4. Check resource usag. \n\n=== DECISION LOGIC ===\n1. If HTTP status is 200 AND body contains \"SYSTEM ONLINE\":\n   - Site is probably OK\n   - Still check logs for warnings or errors\n2. If HTTP request failed (timeout, connection error):\n   - Site is DOWN\n   - Container may be stopped or unresponsive\n   - Use safe Docker commands to determine root cause\n3. If HTTP status is not 200 OR body missing \"SYSTEM ONLINE\":\n   - Site is DOWN\n   - Use safe Docker commands to determine root cause\n\n=== RESPONSE FORMAT (JSON ONLY) ===\nYou MUST respond with **only JSON**, no extra text, exactly in this format:\n\n{\n  \"status\": \"OK\" or \"DOWN\",\n  \"diagnosis\": \"Detailed explanation of what you found (2-4 sentences)\",\n  \"cause\": \"Root cause in one sentence\",\n  \"action\": \"Recommended action with instructions\",\n  \"commands_used\": [\"List of safe Docker/curl commands you executed for analysis only\"],\n  \"logs\": \"Recent container logs or output from relevant commands\",\n  \"suggestedCommand\": \"State-changing command string for human approval (e.g., docker start <container>) or empty string if no action needed\"\n}\n\n=== EXAMPLES ===\n\nExample 1 - Container stopped (needs human approval to start):\n\n{\n  \"status\": \"DOWN\",\n  \"diagnosis\": \"HTTP request timed out. Container check shows it is stopped. Last log entry shows graceful shutdown.\",\n  \"cause\": \"Container is not running.\",\n  \"action\": \"Start the container using the suggestedCommand after human approval.\",\n  \"commands_used\": [\n    \"docker ps -a --filter name=n8n-borisevich-test-app\",\n    \"docker logs n8n-borisevich-test-app --tail=20\"\n  ],\n  \"logs\": \"Spring Boot application started successfully, no activity for last 20 lines...\",\n  \"suggestedCommand\": \"docker start n8n-borisevich-test-app\"\n}\n\nExample 2 - Site running fine (no action needed):\n\n{\n  \"status\": \"OK\",\n  \"diagnosis\": \"HTTP 200 response received. Body contains 'SYSTEM ONLINE'. Container is running and healthy.\",\n  \"cause\": \"No issues detected.\",\n  \"action\": \"Continue monitoring.\",\n  \"commands_used\": [\n    \"docker ps --filter name=n8n-borisevich-test-app\"\n  ],\n  \"logs\": \"No warnings or errors found in recent container logs.\",\n  \"suggestedCommand\": \"\"\n}\n\n=== CRITICAL RULES ===\n1. State-changing commands (docker start/stop/restart, etc.) MUST NOT run automatically.\n2. Always log all executed commands in \"commands_used\".\n3. Respond with JSON only:\n\nExecute `approvedCommand` **only if present**.\n\nBegin your analysis now.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        568,
+        424
+      ],
+      "id": "342b82fc-d3de-4cd8-a2db-30ca7e2aaf4c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        448,
+        648
+      ],
+      "id": "8d340aee-0b64-4143-91f3-0206fdcf9fa6",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "osI9r1CJBo7hT8Bg",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "583dfd3a-2d2c-4389-8474-620f4241b170",
+      "name": "Site OK - Do Nothing",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        224,
+        232
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "ce646cd8-84ec-4a50-b281-be435d0d6422",
+              "leftValue": "={{ $json.isUp }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "39505ab1-e793-4dd1-83f2-fb992be6aa9d",
+      "name": "Site is UP?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        0,
+        328
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "380ec6d7-a5fa-48e0-9c6b-06867a765e72",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1200,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://app:8080/",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "id": "8e34a964-73f4-47e3-ade0-f4e53efebaa5",
+      "name": "Check Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -712,
+        528
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- Given ---\nconst input = $input.first().json;\n\n// --- When ---\n// Handle both object and array cases (timeout and normal responses)\nconst httpResult = Array.isArray(input) ? input[0] : input;\n\n// Default structure\nconst normalized = {\n  isUp: false,\n  statusCode: null,\n  body: null,\n  error: null,\n  errorCode: null,\n  commands_used: [],\n};\n\n// --- Then ---\n// Case 1: request failed (timeout, ECONNREFUSED, etc.)\nif (httpResult?.error) {\n  normalized.error = httpResult.error.message || 'Unknown error';\n  normalized.errorCode = httpResult.error.code || 'UNKNOWN';\n  return [{ json: normalized }];\n}\n\n// Case 2: valid HTTP response\nconst statusCode = httpResult.statusCode ?? null;\n\n// Support both `data` and `body`\nconst rawBody = httpResult.body ?? httpResult.data ?? '';\nconst body = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody);\n\n// Check\nconst hasValidStatus = statusCode === 200;\nconst hasKeyword = body.toUpperCase().includes('SYSTEM ONLINE');\n\nnormalized.isUp = hasValidStatus && hasKeyword;\nnormalized.statusCode = statusCode;\nnormalized.body = body.substring(0, 300);\n\nreturn [{ json: normalized }];\n"
+      },
+      "id": "f844b2b7-99f4-4f3c-ab89-2c6a2d7d4fb7",
+      "name": "Normalize Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      isUp: $json.isUp ?? false,\n      statusCode: $json.statusCode ?? null,\n      body: $json.body ?? null,\n      error: $json.error ?? null,\n      errorCode: $json.errorCode ?? null,\n      commands_used: $json.commands_used ?? [],\n    }\n  }\n];"
+      },
+      "id": "fa4bd4c7-c135-4408-8cdd-3fb2dd6188a1",
+      "name": "Normalize If (to prevent errors as if expects output)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        424
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"status\": {\n      \"type\": \"string\"\n    },\n    \"diagnosis\": {\n      \"type\": \"string\"\n    },\n    \"cause\": {\n      \"type\": \"string\"\n    },\n    \"action\": {\n      \"type\": \"string\"\n    },\n    \"commands_used\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"logs\": {\n      \"type\": \"string\"\n    },\n    \"suggestedCommand\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\"status\", \"diagnosis\", \"cause\", \"action\", \"suggestedCommand\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        832,
+        648
+      ],
+      "id": "e76ffb51-d254-4163-ae58-27a8122b68e1",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "callback_query",
+          "inline_query"
+        ],
+        "additionalFields": {}
+      },
+      "name": "Telegram Callback Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1424,
+        128
+      ],
+      "id": "c342acff-c1e1-47e4-b667-548bad7696cc",
+      "webhookId": "02c20dd3-54d9-4212-aec9-f4d7bf826083",
+      "credentials": {
+        "telegramApi": {
+          "id": "uvzpxIfS6ten68v6",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const command = $input.first().json.callback_query.message.reply_markup.inline_keyboard[0][0].callback_data;\nreturn [{ json: { approvedCommand: command } }];"
+      },
+      "name": "Extract Command from Callback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        128
+      ],
+      "id": "169a727a-4786-4e28-926c-04b81afb49a4"
+    },
+    {
+      "parameters": {
+        "url": "http://app:8080/",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        576,
+        648
+      ],
+      "id": "152e42ff-3e22-41f8-9bc1-eeed561ac80d",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "gwXT5qoMIzK3r5Ig",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/gwXT5qoMIzK3r5Ig",
+          "cachedResultName": "Docker tool"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "command": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('command', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "command"
+          ],
+          "schema": [
+            {
+              "id": "command",
+              "displayName": "command",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        648
+      ],
+      "id": "c6a3d1c0-0c18-40c5-93ca-ae1db0fedda8",
+      "name": "Call 'Docker tool'"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI executor. Your task is to safely run the human-approved Docker or HTTP command in the field `approvedCommand`.\n\nRULES:\n1. Execute ONLY the command provided in `approvedCommand`.\n2. Do NOT generate, modify, or invent any commands.\n3. Capture stdout/stderr in the \"logs\" field.\n4. Capture any errors in \"error\" and \"errorCode\".\n5. Capture website info if HTTP-related.\n6. You have access to tools. USE THEM!\n\n=== YOUR DOCKER TOOLS ===\nYou have access to Docker commands.Use only simple commands as strings. Do not format or modify them.\n\n=== YOUR HTTP TOOLS ===\n- HTTP commands: Use the site-check tool and place the results into  \"isUp\", \"statusCode\",\"body\", \"error\", and \"errorCode\".\n\n=== EXAMPLE OUTPUT ===\nIf the command fails respond like this:\n\n{\n  \"isUp\": false,\n  \"statusCode\": null,\n  \"body\": null,\n  \"error\": \"No such container\",\n  \"errorCode\": \"1\",\n  \"commands_used\": [\"docker start n8n-borisevich-test-app\"],\n  \"logs\": \"Error: No such container: n8n-borisevich-test-app\\n\"\n}\n\nif the site works.\n\n{\n  \"isUp\": true,\n  \"statusCode\": \"200\",\n  \"body\": {$response body from site},\n  \"error\": null,\n  \"errorCode\": null,\n  \"commands_used\": [\"docker start n8n-borisevich-test-app\"],\n  \"logs\": \"container started\"\n}\n\n\nCommand to execute: {{ $json.approvedCommand }}\n\nIMPORTANT:\n- Respond strictly in JSON only.\n- Do NOT add any explanations, extra text, or formatting.\n- Always use arrays for \"commands_used\", even if there is only one command.\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -856,
+        -80
+      ],
+      "id": "470a82d5-6259-40cb-bb14-8dd2433de8f8",
+      "name": "Callback AI"
+    },
+    {
+      "parameters": {
+        "url": "http://app:8080/",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        -848,
+        144
+      ],
+      "id": "383308a0-f4f4-4322-b2a4-2d09bfe1ef39",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $json.output"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        128
+      ],
+      "id": "a8df62fb-322a-4101-a9d7-84692aa86da9",
+      "name": "Parse output",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -976,
+        144
+      ],
+      "id": "0f5e13ef-3172-46ed-8058-c8b21f900dba",
+      "name": "Google Gemini Chat Model flash-lite",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "osI9r1CJBo7hT8Bg",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"isUp\": {\n      \"type\": \"boolean\"\n    },\n    \"statusCode\": {\n      \"type\": \"number\"\n    },\n    \"body\": {\n      \"type\": \"string\"\n    },\n    \"error\": {\n      \"type\": \"string\"\n    },\n    \"errorCode\": {\n      \"type\": \"string\"\n    },\n    \"commands_used\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"logs\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\"isUp\", \"commands_used\"]\n}\n",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -592,
+        144
+      ],
+      "id": "19af8de1-f7aa-4d55-970b-968e615c4ddf",
+      "name": "Output"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        352
+      ],
+      "id": "6ea08768-62c7-41eb-8fcc-6eac6f9c06a2",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "osI9r1CJBo7hT8Bg",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "gwXT5qoMIzK3r5Ig",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/gwXT5qoMIzK3r5Ig",
+          "cachedResultName": "Docker tool"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "command": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('command', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "command"
+          ],
+          "schema": [
+            {
+              "id": "command",
+              "displayName": "command",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -720,
+        144
+      ],
+      "id": "5dc5c037-9511-41a3-a241-5038b38329ac",
+      "name": "Call 'Docker tool' manage state"
+    }
+  ],
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Alert to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Site is UP?": {
+      "main": [
+        [
+          {
+            "node": "Site OK - Do Nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normalize If (to prevent errors as if expects output)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Check Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Website": {
+      "main": [
+        [
+          {
+            "node": "Normalize Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Response": {
+      "main": [
+        [
+          {
+            "node": "Site is UP?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize If (to prevent errors as if expects output)": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Callback Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Command from Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Command from Callback": {
+      "main": [
+        [
+          {
+            "node": "Callback AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Docker tool'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Callback AI": {
+      "main": [
+        [
+          {
+            "node": "Parse output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Callback AI",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse output": {
+      "main": [
+        [
+          {
+            "node": "Site is UP?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model flash-lite": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Callback AI",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Output": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Callback AI",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Output",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Docker tool' manage state": {
+      "ai_tool": [
+        [
+          {
+            "node": "Callback AI",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ac1ec4fc462343250bd35255cf8d366745397ea0c585c524410b9790a28d49ad"
+  }
+}

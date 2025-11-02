@@ -13,6 +13,7 @@ services:
     restart: unless-stopped
     networks:
       - app-network
+
   n8n:
     build:
       context: ./n8n-docker
@@ -25,17 +26,31 @@ services:
       - N8N_BASIC_AUTH_PASSWORD=admin123
       - GENERIC_TIMEZONE=Europe/Moscow
       - TZ=Europe/Moscow
-      - N8N_HOST=unperfumed-reginald-curlier.ngrok-free.dev
-      - WEBHOOK_URL=https://unperfumed-reginald-curlier.ngrok-free.dev/
+      - N8N_HOST=${N8N_PUBLIC_URL_HOST}
+      - WEBHOOK_URL=${N8N_PUBLIC_URL}
     volumes:
-      - n8n_data:/home/node/.n8n
+      - n8n_data:/root/.n8n
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     networks:
       - app-network
     depends_on:
       - app
-    user: "1000:1000"
+    user: "root"
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok-tunnel-agent
+    ports:
+      - "4040:4040"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command: [ "http", "n8n:5678" ]
+    networks:
+      - app-network
+    depends_on:
+      - n8n
+    restart: unless-stopped
 
 networks:
   app-network:
