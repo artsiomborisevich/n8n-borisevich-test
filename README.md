@@ -120,9 +120,9 @@ Expected keyword "SYSTEM ONLINE" was not found or site is unreachable.
 ```
 
 **Screenshots:**
-- [Basic Workflow](screenshots/task1-basic-workflow.png)
-- [Telegram Alert](screenshots/task1-basic.png)
-- [Website Running](screenshots/site-is-up.png)
+- [Basic Workflow](screenshots/task-5.2/task1-basic-workflow.png)
+- [Telegram Alert](screenshots/task-5.2/task1-basic.png)
+- [Website Running](screenshots/task-5.2/site-is-up.png)
 
 ---
 
@@ -185,8 +185,8 @@ Start the container: docker start n8n-borisevich-test-app
 - ✅ Adapts investigation based on symptoms
 
 **Screenshots:**
-- [AI-Enhanced Workflow](screenshots/task2-aidebug-workflow.png)
-- [AI Diagnosis Alert](screenshots/task2-ai-debug.png)
+- [AI-Enhanced Workflow](screenshots/task-5.2/task2-aidebug-workflow.png)
+- [AI Diagnosis Alert](screenshots/task-5.2/task2-ai-debug.png)
 
 #### Scenario B: Website Down (Container Stopped)
 ```cmd
@@ -222,10 +222,10 @@ docker stop n8n-borisevich-test-app
 
 
 **Screenshots:**
-- [AI-Enhanced Recovery Workflow](screenshots/task3-recovery.png)
-- [Human approval](screenshots/task3-approval.png)
-- [App is up](screenshots/task3-app-is-up.png)
-- [Site works](screenshots/site-is-up.png)
+- [AI-Enhanced Recovery Workflow](screenshots/task-5.2/task3-recovery.png)
+- [Human approval](screenshots/task-5.2/task3-approval.png)
+- [App is up](screenshots/task-5.2/task3-app-is-up.png)
+- [Site works](screenshots/task-5.2/site-is-up.png)
 
 
 ## 🚀 Application Endpoints
