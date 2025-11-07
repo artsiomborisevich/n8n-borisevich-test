@@ -119,7 +119,7 @@ docker-compose -f docker-compose-with-k8s.yml up -d
 
 1. Open n8n at http://localhost:5678
 2. Login with `admin` / `admin123`
-3. Import workflow: [n8n-workflow-task1-ai-k8s-monitoring.json](../../n8n-workflows/n8n-workflow-task1-ai-k8s-monitoring.json)
+3. Import workflow: [n8n-workflow-task1-ai-k8s-monitoring.json](../../n8n-workflows/task-6.2/n8n-workflow-task1-ai-k8s-monitoring.json)
 4. Configure credentials:
    - **Kubernetes**: Upload your kubeconfig file (from `~/.kube/config`)
    - **Telegram Bot**: Bot token and chat ID
@@ -146,7 +146,7 @@ kubectl apply -f n8n-k8s/spring-app-deployment.yaml
 
 ## 📚 Implementation Tasks
 
-### Task 6.1: Basic Kubernetes Monitoring ✅
+### Task 6.2: Basic Kubernetes Monitoring ✅
 
 **Objective:** Monitor Spring Boot application in k3d cluster and detect failures
 
@@ -157,7 +157,7 @@ kubectl apply -f n8n-k8s/spring-app-deployment.yaml
 - Code node normalizes pod status (Running, CrashLoopBackOff, OOMKilled, etc.)
 - Telegram node sends alert with pod details
 
-**Workflow File:** [n8n-workflow-task1-ai-k8s-monitoring.json](../../n8n-workflows/n8n-workflow-task1-ai-k8s-monitoring.json)
+**Workflow File:** [n8n-workflow-task1-ai-k8s-monitoring.json](../../n8n-workflows/task-6.2/n8n-workflow-task1-ai-k8s-monitoring.json)
 
 **How it works:**
 1. Schedule trigger runs every 5 minutes
@@ -201,9 +201,7 @@ kubectl apply -f n8n-k8s/spring-app-deployment.yaml
 - Kubernetes node retrieves pod logs
 - AI determines root cause (exit codes, OOM, config issues)
 - Provides actionable fix recommendations
-- Human-in-the-loop approval before applying fixes
-
-**Workflow File:** [n8n-workflow-task2-ai-k8s-recovery.json](n8n-workflows/n8n-workflow-task2-ai-k8s-recovery.json)
+**Workflow File:** [n8n-workflow-task2-ai-k8s-recovery.json](../../n8n-workflows/task-6.2/n8n-workflow-task2-ai-k8s-monitoring.json)
 
 **How it works:**
 1. HTTP check detects failure
@@ -244,8 +242,6 @@ Invalid container command configured in deployment
 
 📋 Pod Logs:
 (Container exits immediately, no logs available)
-
-Do you approve this fix? Reply with 'yes' to apply.
 ```
 
 **Key Improvements:**
@@ -254,8 +250,8 @@ Do you approve this fix? Reply with 'yes' to apply.
 - ✅ Interprets container exit codes
 
 **Screenshots:**
-- [AI K8s Workflow](task1-workflow-monitoring.png)
-- [AI Diagnosis](task1-telegram-alert-monitoring.png)
+- [AI K8s Workflow](task2-workflow-ai-monitoring.png)
+- [AI Diagnosis](task2-workflow-ai-alerting.png)
 
 ---
 
