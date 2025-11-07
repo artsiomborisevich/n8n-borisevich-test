@@ -1,0 +1,371 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "fcfe744a-99f3-4e0b-b458-45e546a78e87",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -896,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8080/",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 5000
+        }
+      },
+      "id": "03cbe687-7c73-43f1-9a7e-332b43fd17f6",
+      "name": "Check Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -672,
+        96
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "id": "bea10dac-db45-4f75-a6ce-997c8e64c29d",
+      "name": "Site OK - Do Nothing",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "resource": "pod"
+      },
+      "type": "n8n-nodes-k8s.kubernetes",
+      "typeVersion": 1,
+      "position": [
+        0,
+        192
+      ],
+      "id": "1fed1c52-e0e1-41cc-a7e2-001f4c5eafaf",
+      "name": "Get pods",
+      "credentials": {
+        "kubernetesCredentialsApi": {
+          "id": "QDV3nQxdJiQhcvWA",
+          "name": "Kubernetes Credentials file"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const pod = item.json;\n\n  // Determine pod status based on container states\n  let status = pod.status.phase; // fallback\n  if (pod.status.containerStatuses && pod.status.containerStatuses.length > 0) {\n    // If any container is waiting, show waiting reason\n    const waitingContainer = pod.status.containerStatuses.find(c => c.state.waiting);\n    if (waitingContainer) {\n      status = waitingContainer.state.waiting.reason || \"Waiting\";\n    } else {\n      // If any container terminated with non-zero exit code\n      const terminatedContainer = pod.status.containerStatuses.find(c => c.state.terminated && c.state.terminated.exitCode !== 0);\n      if (terminatedContainer) {\n        status = terminatedContainer.state.terminated.reason || `Error(${terminatedContainer.state.terminated.exitCode})`;\n      } else {\n        // All containers running\n        status = \"Running\";\n      }\n    }\n  }\n\n  return {\n    json: {\n      name: pod.metadata.name,\n      namespace: pod.metadata.namespace,\n      status: status,\n      podIP: pod.status.podIP,\n      restarts: pod.status.containerStatuses?.reduce((sum, c) => sum + c.restartCount, 0) || 0\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        192
+      ],
+      "id": "3815b91f-25ad-4274-8edd-cdfe9a9a7bea",
+      "name": "Normalize output"
+    },
+    {
+      "parameters": {
+        "chatId": "1381321310",
+        "text": "=🚨 **Kubernetes Pod Status Alert**\n---\n📦 **Pod Name:** {{ $('Normalize output').item.json.name }}\n🌐 **Namespace:** {{ $('Normalize output').item.json.namespace }}\n✅ **Status:** {{ $('Normalize output').item.json.status }}\n🔄 **Restarts:** {{ $('Normalize output').item.json.restarts }}\n\n---\n\n🧠 **AI Diagnosis and Action Plan**\n---\n📄 **Log Snippet:** {{ $json.output.log_error_snippet }}\n🔬 **Diagnosis:** {{ $json.output.diagnosis }}\n🛠️ **Recommended Actions:** {{ $json.output.recommended_actions }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "8ba252a0-87b2-42a6-9cff-3562905e8d5d",
+      "name": "Send Alert to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        1312,
+        192
+      ],
+      "webhookId": "1296a8cd-8b7e-4ce0-9a90-c761cd3273ce",
+      "credentials": {
+        "telegramApi": {
+          "id": "uvzpxIfS6ten68v6",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "ce646cd8-84ec-4a50-b281-be435d0d6422",
+              "leftValue": "={{ $json.isUp }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "f2659eff-db98-4ad1-91d8-5280a33a4f8d",
+      "name": "Site is UP?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- Given ---\nconst input = $input.first().json;\n\n// --- When ---\n// Handle both object and array cases (timeout and normal responses)\nconst httpResult = Array.isArray(input) ? input[0] : input;\n\n// Default structure\nconst normalized = {\n  isUp: false,\n  statusCode: null,\n  body: null,\n  error: null,\n  errorCode: null,\n  commands_used: [],\n};\n\n// --- Then ---\n// Case 1: request failed (timeout, ECONNREFUSED, etc.)\nif (httpResult?.error) {\n  normalized.error = httpResult.error.message || 'Unknown error';\n  normalized.errorCode = httpResult.error.code || 'UNKNOWN';\n  return [{ json: normalized }];\n}\n\n// Case 2: valid HTTP response\nconst statusCode = httpResult.statusCode ?? null;\n\n// Support both `data` and `body`\nconst rawBody = httpResult.body ?? httpResult.data ?? '';\nconst body = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody);\n\n// Check\nconst hasValidStatus = statusCode === 200;\nconst hasKeyword = body.toUpperCase().includes('SYSTEM ONLINE');\n\nnormalized.isUp = hasValidStatus && hasKeyword;\nnormalized.statusCode = statusCode;\nnormalized.body = body.substring(0, 300);\n\nreturn [{ json: normalized }];\n"
+      },
+      "id": "bce0f482-a965-4a5d-a105-e2a3c5156508",
+      "name": "Normalize Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=kubectl logs {{$json[\"name\"]}} -n {{$json[\"namespace\"]}} --tail=100 --all-containers=true"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        448,
+        192
+      ],
+      "id": "0dac9153-c9b5-4055-9e35-92b6dee4a7ff",
+      "name": "Get logs"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import re\n\nlogs = _input.first().json.stdout\n\nerrors = re.findall(r'.*(error|failed|permission denied|exit 1).*', logs, flags=re.IGNORECASE)\n\nif errors:\n    output = {\n        'error_found': True,       \n        'error_lines': errors     \n    }\nelse:\n    output = {\n        'error_found': False,\n        'error_lines': []\n    }\n\nreturn [{'json': output}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        192
+      ],
+      "id": "ab166455-65a2-4e33-bff8-a0f844df4cb1",
+      "name": "Analyze in python"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a senior DevOps Engineer specializing in Kubernetes troubleshooting.\n\nAnalyze the error from the log and briefly explain the reason for the pod crash if the errors exists. In case if errors not found send the message \"Errors not found\"\nError exists :{{ $json.error_found }}\nError: {{ $json.error_lines }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        896,
+        192
+      ],
+      "id": "ecd051a3-9719-4f38-a435-8585c82923cf",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        848,
+        400
+      ],
+      "id": "e2d12b31-3bda-4ce2-9962-1b5ef7571843",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "osI9r1CJBo7hT8Bg",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"title\": \"PodCrashAnalysis\",\n  \"description\": \"Structured analysis of a Kubernetes pod crash, providing the log error, diagnosis, and recommended recovery actions.\",\n  \"properties\": {\n    \"log_error_snippet\": {\n      \"type\": \"string\",\n      \"description\": \"The specific error message or log excerpt that indicates the crash reason (e.g., 'OOMKilled', 'connection refused', 'Exit Code 137').\"\n    },\n    \"diagnosis\": {\n      \"type\": \"string\",\n      \"description\": \"A brief, technical explanation of the root cause of the pod crash, identifying the failure type (e.g., 'The pod was terminated by the OOM killer due to memory resource limits being exceeded').\"\n    },\n    \"recommended_actions\": {\n      \"type\": \"array\",\n      \"description\": \"A list of actionable steps to resolve the issue, ordered by priority.\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  },\n  \"required\": [\"log_error_snippet\", \"diagnosis\", \"recommended_actions\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1056,
+        384
+      ],
+      "id": "0098f06b-725f-4a4b-b471-2c7a97c5d951",
+      "name": "Structured Output Parser"
+    }
+  ],
+  "connections": {
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Check Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Website": {
+      "main": [
+        [
+          {
+            "node": "Normalize Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get pods": {
+      "main": [
+        [
+          {
+            "node": "Normalize output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize output": {
+      "main": [
+        [
+          {
+            "node": "Get logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Site is UP?": {
+      "main": [
+        [
+          {
+            "node": "Site OK - Do Nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get pods",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Response": {
+      "main": [
+        [
+          {
+            "node": "Site is UP?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get logs": {
+      "main": [
+        [
+          {
+            "node": "Analyze in python",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze in python": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Alert to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "ac1ec4fc462343250bd35255cf8d366745397ea0c585c524410b9790a28d49ad"
+  }
+}
