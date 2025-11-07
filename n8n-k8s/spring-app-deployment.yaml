@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n8n-borisevich-test-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: n8n-borisevich-test-app
+  template:
+    metadata:
+      labels:
+        app: n8n-borisevich-test-app
+    spec:
+      containers:
+        - name: n8n-borisevich-test-app
+          image: n8n-borisevich-test_app:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          command: [ "/bin/sh" ]
+          args:
+            - "-c"
+            - "echo 'Starting application...'; echo 'Adding a 10-second delay (sleep 10)...'; sleep 10; echo 'Delay finished. Now intentionally failing (exit 1)...'; exit 1"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 3
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 3
+            failureThreshold: 2
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-app-service
+spec:
+  selector:
+    app: n8n-borisevich-test-app
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080
