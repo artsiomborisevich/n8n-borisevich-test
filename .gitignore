@@ -42,3 +42,7 @@ n8n_data/
 ### Environment ###
 .env
 
+.claude/secrets/
+.claude/*.env
+.claude/*.key
+.claude/*.json
