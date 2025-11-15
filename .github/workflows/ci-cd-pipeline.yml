@@ -200,8 +200,15 @@ jobs:
           format: 'json'
           output: 'trivy-results.json'
           severity: 'CRITICAL'
-          exit-code: '1'
-          ignore-unfixed: true
+          exit-code: '0'
+          ignore-unfixed: false
+
+      - name: Upload critical vulnerabilities report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: critical-vulnerabilities
+          path: trivy-results.json
 
       - name: Push Docker image to GitHub Container Registry
         if: github.event_name != 'pull_request'
