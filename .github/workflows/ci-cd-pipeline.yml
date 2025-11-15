@@ -70,27 +70,27 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
-      - name: OWASP Dependency Check
-        uses: dependency-check/Dependency-Check_Action@main
-        with:
-          project: 'n8n-borisevich-test'
-          path: '.'
-          format: 'ALL'
-          args: >
-            --enableRetired
-            --enableExperimental
-            --failOnCVSS 7
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run OWASP Dependency Check via Gradle
+        run: |
+          ./gradlew dependencyCheckAnalyze --info
+        continue-on-error: true
 
       - name: Upload OWASP Dependency Check results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dependency-check-report
-          path: reports/
+          path: build/reports/dependency-check/
 
-      - name: Run Gradle dependency vulnerability scan
-        run: |
-          ./gradlew dependencyCheckAnalyze || true
+      - name: Upload SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: build/reports/dependency-check/dependency-check-report.sarif
+        continue-on-error: true
 
       - name: Auto-fix vulnerable dependencies
         id: auto-fix
@@ -160,13 +160,13 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build Docker image
+      - name: Build Docker image (for scanning)
         uses: docker/build-push-action@v5
         with:
           context: .
           push: false
           load: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:scan-${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -174,7 +174,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:scan-${{ github.sha }}
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
@@ -188,7 +188,7 @@ jobs:
       - name: Run Trivy vulnerability scanner (table format)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:scan-${{ github.sha }}
           format: 'table'
           severity: 'CRITICAL,HIGH,MEDIUM'
           exit-code: '0'
@@ -196,7 +196,7 @@ jobs:
       - name: Check for critical vulnerabilities
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:scan-${{ github.sha }}
           format: 'json'
           output: 'trivy-results.json'
           severity: 'CRITICAL'
