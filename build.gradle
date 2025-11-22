@@ -19,14 +19,18 @@ repositories {
     mavenCentral()
 }
 
+ext {
+    mapstructVersion = '1.6.3'
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'io.micrometer:micrometer-registry-prometheus:1.16.0'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    implementation 'org.mapstruct:mapstruct:1.6.3'
+    implementation "org.mapstruct:mapstruct:${mapstructVersion}"
 
-    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.assertj:assertj-core:3.27.6'
