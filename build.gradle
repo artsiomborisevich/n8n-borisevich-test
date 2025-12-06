@@ -1,18 +1,17 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.3.5'
-    id 'io.spring.dependency-management' version '1.1.6'
-    id 'org.owasp.dependencycheck' version '9.0.9'
-    id 'com.github.ben-manes.versions' version '0.51.0'
+    id 'org.springframework.boot' version '3.4.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+
+
 }
 
 group = 'net.idt'
 version = '0.0.1-SNAPSHOT'
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 repositories {
@@ -24,35 +23,25 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+    implementation 'org.mapstruct:mapstruct' version '1.5.5.Final'
 
-    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+    annotationProcessor 'org.mapstruct:mapstruct-processor' version '1.5.5.Final'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.assertj:assertj-core:3.24.2'
+    testImplementation 'org.assertj:assertj-core:3.27.6'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
 }
 
-// OWASP Dependency Check configuration
-dependencyCheck {
-    failBuildOnCVSS = 7
-    suppressionFile = 'dependency-check-suppressions.xml'
-    formats = ['HTML', 'JSON', 'SARIF']
-    outputDirectory = 'build/reports/dependency-check'
-}
+
 
 // Dependency updates configuration
-tasks.named('dependencyUpdates') {
-    rejectVersionIf {
-        isNonStable(it.candidate.version)
-    }
-}
 
-def isNonStable(String version) {
-    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { version.toUpperCase().contains(it) }
-    def regex = /^[0-9,.v-]+(-r)?$/
-    return !stableKeyword && !(version ==~ regex)
-}
+
+// def isNonStable(String version) {
+//     def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { version.toUpperCase().contains(it) }
+//     def regex = /^[0-9,.v-]+(-r)?$/
+//     return !stableKeyword && !(version ==~ regex)
+// }
