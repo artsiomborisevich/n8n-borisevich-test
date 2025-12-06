@@ -43,7 +43,7 @@ jobs:
           
           # 2. Instruct the Gemini agent to perform the task
           # CORRECTED: Use --allowed-tools run_shell_command instead of -t
-          gemini --yolo --allowed-tools run_shell_command "
+          gemini --yolo --allowed-tools run_shell_command -m gemini-2.5-flash "
             You are a skilled Java/Gradle/Spring Boot developer agent.
             Your task is to:
             1. Analyze the project's **Gradle build files** (e.g., 'build.gradle' or 'build.gradle.kts') for **outdated dependencies** and security **vulnerabilities**.
