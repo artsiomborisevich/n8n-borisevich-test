@@ -1,4 +1,4 @@
-name: 🛠️ Gemini Public Maven Autofix
+name: 🛠️ Gemini Public Gradle Autofix
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: ☕ Setup Java and Maven
+      - name: ☕ Setup Java and Gradle
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -33,7 +33,6 @@ jobs:
         # The GEMINI_API_KEY must be set as a repository secret
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          # The GitHub token is used by 'gh pr create' for authentication
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # 1. Define Branch and Checkout
@@ -41,16 +40,15 @@ jobs:
           git checkout -b $BRANCH_NAME
           
           # 2. Instruct the Gemini agent to perform the task
-          # --yolo: Runs autonomously, bypassing all confirmation prompts
-          # -t run_shell_command: Grants permission to run shell commands like 'mvn'
+          # The agent will use the './gradlew' command
           gemini --yolo -t run_shell_command "
-            You are a skilled Java/Maven/Spring Boot developer agent.
+            You are a skilled Java/Gradle/Spring Boot developer agent.
             Your task is to:
-            1. Analyze the project's 'pom.xml' for **outdated dependencies** and security **vulnerabilities**.
-            2. Update all dependencies, especially **Spring Boot**, to the latest stable versions that resolve vulnerabilities. Use 'mvn versions:display-dependency-updates' as a guide.
+            1. Analyze the project's **Gradle build files** (e.g., 'build.gradle' or 'build.gradle.kts') for **outdated dependencies** and security **vulnerabilities**.
+            2. Update all dependencies, especially **Spring Boot**, to the latest stable versions that resolve vulnerabilities. You may use a tool like the Gradle Versions Plugin (`./gradlew dependencyUpdates`) for guidance if it is configured in the project.
             3. Scan the existing Java code for **deprecated methods** and **refactor** the code to use the modern equivalents.
-            4. After all changes, run a full Maven build and test: 'mvn clean install'. If tests fail, you must fix the code until the build passes.
-            5. If changes are made, commit them with a clear message: 'feat: Automated Java/Maven updates by Gemini Agent'.
+            4. After all changes, run a full Gradle build and test: **'./gradlew clean build'**. If tests fail, you must fix the code until the build passes.
+            5. If changes are made, commit them with a clear message: 'feat: Automated Java/Gradle updates by Gemini Agent'.
             "
           
           # 3. Check for changes, push, and create PR
@@ -59,7 +57,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add .
-            git commit -m "feat: Automated Java/Maven updates by Gemini Agent"
+            git commit -m "feat: Automated Java/Gradle updates by Gemini Agent"
             git push origin $BRANCH_NAME
           
             # Install the GitHub CLI for creating the PR
@@ -69,7 +67,7 @@ jobs:
             gh pr create \
               --base main \
               --head $BRANCH_NAME \
-              --title "🤖 Automated Fix: Dependency & Deprecation Updates" \
+              --title "🤖 Automated Fix: Dependency & Deprecation Updates (Gradle)" \
               --body "Gemini Agent has automatically updated dependencies to fix vulnerabilities and refactored deprecated methods. Please review these changes."
           else
             echo "No fixes required or changes detected. Branch not pushed."
