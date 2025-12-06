@@ -1,0 +1,74 @@
+name: 🛠️ Gemini Public Gradle Autofix
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * 1'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  gemini-autofix:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ☕ Setup Java and Gradle
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: 🤖 Install Gemini CLI
+        run: npm install -g @google/gemini-cli
+
+      - name: 🚀 Run Gemini Autonomous Fix
+        # The GEMINI_API_KEY must be set as a repository secret
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 1. Define Branch and Checkout
+          BRANCH_NAME="gemini-autofix-$(date +%Y%m%d%H%M)"
+          git checkout -b $BRANCH_NAME
+          
+          # 2. Instruct the Gemini agent to perform the task
+          # The agent will use the './gradlew' command
+          gemini --yolo -t run_shell_command "
+            You are a skilled Java/Gradle/Spring Boot developer agent.
+            Your task is to:
+            1. Analyze the project's **Gradle build files** (e.g., 'build.gradle' or 'build.gradle.kts') for **outdated dependencies** and security **vulnerabilities**.
+            2. Update all dependencies, especially **Spring Boot**, to the latest stable versions that resolve vulnerabilities. You may use a tool like the Gradle Versions Plugin (`./gradlew dependencyUpdates`) for guidance if it is configured in the project.
+            3. Scan the existing Java code for **deprecated methods** and **refactor** the code to use the modern equivalents.
+            4. After all changes, run a full Gradle build and test: **'./gradlew clean build'**. If tests fail, you must fix the code until the build passes.
+            5. If changes are made, commit them with a clear message: 'feat: Automated Java/Gradle updates by Gemini Agent'.
+            "
+          
+          # 3. Check for changes, push, and create PR
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Changes found. Committing and pushing."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .
+            git commit -m "feat: Automated Java/Gradle updates by Gemini Agent"
+            git push origin $BRANCH_NAME
+          
+            # Install the GitHub CLI for creating the PR
+            sudo apt-get update && sudo apt-get install gh -y
+          
+            # Create a Pull Request
+            gh pr create \
+              --base main \
+              --head $BRANCH_NAME \
+              --title "🤖 Automated Fix: Dependency & Deprecation Updates (Gradle)" \
+              --body "Gemini Agent has automatically updated dependencies to fix vulnerabilities and refactored deprecated methods. Please review these changes."
+          else
+            echo "No fixes required or changes detected. Branch not pushed."
+          fi
