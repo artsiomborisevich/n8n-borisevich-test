@@ -1,0 +1,59 @@
+version: 1
+
+policySet:
+  name: "java-pr-review"
+  description: "PR review rules for Java 17/21 project with tests, AssertJ, and DevOps conventions"
+
+policies:
+  - name: "java-src-review"
+    description: "Java code quality rules"
+    actions:
+      - type: review
+        intent: "request_changes"
+        comment: "Fix violations before merge."
+
+    rules:
+      - id: "no-system-out"
+        description: "Avoid System.out.println"
+        pattern: "System\\.out\\.println"
+        deny: true
+
+      - id: "no-wildcard-imports"
+        description: "Wildcard imports reduce clarity"
+        pattern: "import .*\\.\\*;"
+        deny: true
+
+      - id: "todo-forbidden"
+        description: "Forbidden TODO comments"
+        pattern: "TODO"
+        deny: false
+        warn: true
+
+      - id: "assertj-required"
+        description: "Use AssertJ in tests"
+        pattern: "Assertions\\.assert"
+        deny: true
+        message: "Use AssertJ (`assertThat()`)."
+
+  - name: "tests-policy"
+    description: "Rules for tests in PR"
+    actions:
+      - type: review
+        intent: "request_changes"
+
+    rules:
+      - id: "tests-required"
+        requireTests: true
+        description: "Each PR must include or update tests"
+
+  - name: "ci-policy"
+    description: "Require CI config changes to follow standards"
+    actions:
+      - type: review
+        intent: "request_changes"
+
+    rules:
+      - id: "no-hardcoded-paths"
+        description: "No hardcoded FS paths for Windows/Linux"
+        pattern: "C:|/home/"
+        warn: true
