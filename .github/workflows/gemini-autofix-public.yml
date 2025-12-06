@@ -55,10 +55,10 @@ jobs:
                - **Spring Boot:** Update to latest stable 
                - **General:** Check other standard libraries (Lombok, Jackson, etc.) and update them if they appear outdated.         
           
-            2. **PHASE 2: UPGRADE & REFACTOR**
+            3. **PHASE 3: UPGRADE & REFACTOR**
                - Update deprecated usages/methods
 
-            3. **PHASE 3: THE GATEKEEPER (VERIFICATION)**
+            4. **PHASE 4: THE GATEKEEPER (VERIFICATION)**
                - Run the command: **'./gradlew clean build'**
                - **READ THE OUTPUT.**
                - **IF BUILD FAILS:** You are PROHIBITED from committing. You must:
@@ -67,7 +67,7 @@ jobs:
                  - Fix the compilation error or test failure.
                  - **LOOP:** Run './gradlew clean build' again. Repeat until it passes.
 
-            4. **PHASE 4: COMMIT**
+            5. **PHASE 5: COMMIT**
                - ONLY after the build prints 'BUILD SUCCESSFUL', commit the changes with message: 'feat: Upgrade to Spring Boot 3.4 and migrate to @MockitoBean'.
             "
           
