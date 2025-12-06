@@ -26,11 +26,13 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      - name: 🔒 Grant Execute Permission to gradlew
+        run: chmod +x ./gradlew
+
       - name: 🤖 Install Gemini CLI
         run: npm install -g @google/gemini-cli
 
       - name: 🚀 Run Gemini Autonomous Fix
-        # The GEMINI_API_KEY must be set as a repository secret
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,18 +42,18 @@ jobs:
           git checkout -b $BRANCH_NAME
           
           # 2. Instruct the Gemini agent to perform the task
-          # The agent will use the './gradlew' command
-          gemini --yolo -t run_shell_command "
+          # CORRECTED: Use --allowed-tools run_shell_command instead of -t
+          gemini --yolo --allowed-tools run_shell_command "
             You are a skilled Java/Gradle/Spring Boot developer agent.
             Your task is to:
             1. Analyze the project's **Gradle build files** (e.g., 'build.gradle' or 'build.gradle.kts') for **outdated dependencies** and security **vulnerabilities**.
-            2. Update all dependencies, especially **Spring Boot**, to the latest stable versions that resolve vulnerabilities. You may use a tool like the Gradle Versions Plugin (`./gradlew dependencyUpdates`) for guidance if it is configured in the project.
+            2. Update all dependencies, especially **Spring Boot**, to the latest stable versions that resolve vulnerabilities.
             3. Scan the existing Java code for **deprecated methods** and **refactor** the code to use the modern equivalents.
             4. After all changes, run a full Gradle build and test: **'./gradlew clean build'**. If tests fail, you must fix the code until the build passes.
             5. If changes are made, commit them with a clear message: 'feat: Automated Java/Gradle updates by Gemini Agent'.
             "
           
-          # 3. Check for changes, push, and create PR
+          # 3. Check for changes, push, and create PR (rest of script remains the same)
           if [ -n "$(git status --porcelain)" ]; then
             echo "Changes found. Committing and pushing."
             git config user.name "github-actions[bot]"
