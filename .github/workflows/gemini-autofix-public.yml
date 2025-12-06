@@ -46,11 +46,12 @@ jobs:
           gemini --yolo --allowed-tools run_shell_command -m gemini-2.5-flash-lite "
             You are a skilled Java/Gradle/Spring Boot developer agent.
             Your task is to:
-            1. Analyze the project's **Gradle build files** (e.g., 'build.gradle' or 'build.gradle.kts') for **outdated dependencies** and security **vulnerabilities**.
-            2. Update all dependencies, especially **Spring Boot**, to the latest stable versions that resolve vulnerabilities.
-            3. Scan the existing Java code for **deprecated methods** and **refactor** the code to use the modern equivalents.
-            4. After all changes, run a full Gradle build and test: **'./gradlew clean build'**. If tests fail, you must fix the code until the build passes.
-            5. If changes are made, commit them with a clear message: 'feat: Automated Java/Gradle updates by Gemini Agent'.
+            1. **FIRST, use the 'read_file' tool to inspect the exact content of build.gradle and gradle-wrapper.properties, paying close attention to indentation and versioning style (literal vs. variable).**
+            2. Analyze the project's **Gradle build files** for **outdated dependencies** and security **vulnerabilities**.
+            3. Update all dependencies, especially **Spring Boot**, to the latest stable versions that resolve vulnerabilities. When updating, ensure the new line exactly matches the indentation and structure of the old line.
+            4. Scan the existing Java code for **deprecated methods** and **refactor** the code to use the modern equivalents.
+            5. After all changes, run a full Gradle build and test: **'./gradlew clean build'**. If tests fail, you must fix the code until the build passes.
+            6. If changes are made, commit them with a clear message: 'feat: Automated Java/Gradle updates by Gemini Agent'.
             "
           
           # 3. Check for changes, push, and create PR (rest of script remains the same)
