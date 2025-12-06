@@ -24,7 +24,7 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'maven'
+          cache: 'gradle'
 
       - name: 🤖 Install Gemini CLI
         run: npm install -g @google/gemini-cli
