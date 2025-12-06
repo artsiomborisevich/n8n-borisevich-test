@@ -51,8 +51,12 @@ jobs:
             1. **PHASE 1: INSPECTION**
                - Run 'read_file build.gradle' to check the Spring Boot version.
           
+            2. **PHASE 2: UPGRADE STRATEGY**
+               - **Spring Boot:** Update to latest stable 
+               - **General:** Check other standard libraries (Lombok, Jackson, etc.) and update them if they appear outdated.         
+          
             2. **PHASE 2: UPGRADE & REFACTOR**
-               - Update dependencies and deprecated usages/methods
+               - Update deprecated usages/methods
 
             3. **PHASE 3: THE GATEKEEPER (VERIFICATION)**
                - Run the command: **'./gradlew clean build'**
