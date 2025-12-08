@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.3.5'
+    id 'org.springframework.boot' version '3.3.11'
     id 'io.spring.dependency-management' version '1.1.6'
 }
 
@@ -12,6 +12,10 @@ java {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
+
+// Override dependency versions for security fixes
+ext['tomcat.version'] = '10.1.45'
+ext['json-smart.version'] = '2.5.2'
 
 repositories {
     mavenCentral()
