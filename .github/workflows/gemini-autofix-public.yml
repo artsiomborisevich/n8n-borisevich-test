@@ -42,7 +42,7 @@ jobs:
           git checkout -b $BRANCH_NAME
           
           # 2. Instruct the Gemini agent to perform the task
-          gemini --yolo --allowed-tools run_shell_command -m gemini-2.5-flash-lite "
+          gemini --yolo --allowed-tools run_shell_command -m gemini-2.5-flash "
             You are a skilled Java/Gradle/Spring Boot developer agent.
           
             **MISSION CRITICAL PROTOCOL:**
