@@ -68,33 +68,62 @@ jobs:
             const issueBody = `@copilot Please fix the following HIGH and CRITICAL security vulnerabilities. Follow these steps:
 
             **MISSION CRITICAL PROTOCOL:**
-            You are FORBIDDEN from committing any code until you have verified the build passes. Follow these steps strictly in order:
+            You are FORBIDDEN from committing any code until you have verified the build passes AND all deprecated methods are fixed. Follow these steps strictly in order:
 
             1. **PHASE 1: INSPECTION**
                - Examine the build.gradle file to understand current dependency versions
                - Review the security alerts below
+               - Run: \`./gradlew compileJava compileTestJava -Xlint:deprecation\` to detect ALL deprecated usages
+               - Document all deprecation warnings found
             
             2. **PHASE 2: UPGRADE STRATEGY**
                - Update dependencies with HIGH or CRITICAL vulnerabilities to the patched versions specified below
-               - Check for and update any deprecated methods/annotations (e.g., @MockBean -> @MockitoBean)
-               - Ensure compatibility between updated dependencies
+               - Identify ALL deprecated methods/annotations from compilation warnings
+               - Common deprecations in Spring Boot 3.4+:
+                 * \`@MockBean\` → \`@MockitoBean\` (org.springframework.boot.test.mock.mockito)
+                 * \`RestTemplateBuilder\` deprecated methods
+                 * Any \`javax.*\` → \`jakarta.*\` imports
+               - Plan refactoring strategy for each deprecated usage
             
             3. **PHASE 3: UPGRADE & REFACTOR**
                - Update build.gradle with new dependency versions
-               - Refactor deprecated method usages throughout the codebase
-               - Update imports if needed
+               - **MANDATORY**: Search and fix ALL deprecated method usages throughout the codebase:
+                 1. Search entire codebase for \`@MockBean\` and replace with \`@MockitoBean\`
+                 2. Update corresponding imports: \`import org.springframework.boot.test.mock.mockito.MockBean;\` → \`import org.springframework.boot.test.mock.mockito.MockitoBean;\`
+                 3. Fix any other deprecated APIs identified in Phase 1
+               - Verify NO deprecation warnings remain: \`./gradlew compileJava compileTestJava -Xlint:deprecation 2>&1 | grep -i "warning"\`
             
             4. **PHASE 4: THE GATEKEEPER (VERIFICATION)**
-               - Run the command: **'./gradlew clean build'**
+               - Run the command: **\`./gradlew clean build\`**
                - **READ THE OUTPUT.**
                - **IF BUILD FAILS:** You are PROHIBITED from committing. You must:
-                 - Analyze the error log
-                 - Read the failing test file
-                 - Fix the compilation error or test failure
-                 - **LOOP:** Run './gradlew clean build' again. Repeat until it passes.
+                 1. Analyze the error log
+                 2. Read the failing test file
+                 3. Fix the compilation error or test failure
+                 4. **LOOP:** Run \`./gradlew clean build\` again. Repeat until it passes.
+               - **VERIFY NO DEPRECATION WARNINGS**: Run \`./gradlew compileJava compileTestJava -Xlint:deprecation\`
+               - Confirm output shows **0 warnings**
             
-            5. **PHASE 5: COMMIT**
-               - ONLY after the build prints 'BUILD SUCCESSFUL', commit the changes with message: 'fix: Update HIGH/CRITICAL dependencies and fix deprecated methods'
+            5. **PHASE 5: REPORTING & COMMIT**
+               - List ALL changes made:
+                 * Dependencies updated (package → version)
+                 * Deprecated methods fixed (old → new)
+                 * Files modified
+               - ONLY after:
+                 ✅ Build prints 'BUILD SUCCESSFUL'
+                 ✅ No deprecation warnings
+                 ✅ All tests pass
+               - Commit with message: 'fix: Update HIGH/CRITICAL dependencies and fix deprecated methods'
+
+            ## 📋 Mandatory Checklist Before Commit
+
+            - [ ] All dependencies updated per alerts below
+            - [ ] Ran deprecation check: \`./gradlew compileJava compileTestJava -Xlint:deprecation\`
+            - [ ] Found and fixed ALL deprecated usages (especially @MockBean)
+            - [ ] Updated all affected imports
+            - [ ] Build passes: \`./gradlew clean build\`
+            - [ ] Zero deprecation warnings
+            - [ ] All tests green
 
             ## Security Alerts to Fix
 

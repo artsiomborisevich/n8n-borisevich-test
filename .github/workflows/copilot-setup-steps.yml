@@ -39,6 +39,12 @@ jobs:
       - name: 📋 List Current Dependencies
         run: ./gradlew dependencies --configuration runtimeClasspath
 
+      - name: ⚠️ Check for Deprecation Warnings
+        run: |
+          echo "Checking for deprecated method usages..."
+          ./gradlew compileJava compileTestJava -Xlint:deprecation || true
+          echo "Note: Review warnings above for deprecated APIs"
+
       - name: 🧪 Run Tests to Establish Baseline
         run: ./gradlew test
 
