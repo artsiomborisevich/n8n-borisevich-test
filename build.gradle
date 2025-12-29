@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.3.5'
+    id 'org.springframework.boot' version '3.3.11'
     id 'io.spring.dependency-management' version '1.1.6'
 }
 
@@ -17,16 +17,29 @@ repositories {
     mavenCentral()
 }
 
+// Dependency management to override vulnerable transitive dependencies
+ext {
+    tomcatVersion = '10.1.45'
+    jsonSmartVersion = '2.5.2'
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.mapstruct:mapstruct:1.5.5.Final'
 
+    // Override vulnerable Tomcat version (CVE-2025-55752, CVE-2025-48989, CVE-2025-48988, CVE-2025-24813, CVE-2024-56337, CVE-2024-50379)
+    implementation "org.apache.tomcat.embed:tomcat-embed-core:${tomcatVersion}"
+    implementation "org.apache.tomcat.embed:tomcat-embed-websocket:${tomcatVersion}"
+
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.assertj:assertj-core:3.24.2'
+    
+    // Override vulnerable json-smart version (CVE-2024-57699)
+    testImplementation "net.minidev:json-smart:${jsonSmartVersion}"
 }
 
 tasks.named('test') {
