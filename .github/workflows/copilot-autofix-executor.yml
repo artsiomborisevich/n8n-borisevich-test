@@ -1,161 +1,161 @@
-name: 🤖 Copilot Auto-Executor
+# name: 🤖 Copilot Auto-Executor
 
-on:
-  issues:
-    types: [opened, assigned]
+# on:
+#   issues:
+#     types: [opened, assigned]
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+# permissions:
+#   contents: write
+#   pull-requests: write
+#   issues: write
 
-jobs:
-  execute-copilot-fix:
-    # Only run when Copilot is assigned to an issue with the security fix title
-    if: |
-      github.event.issue.title == '🚨 Automated Security Fixes Required (HIGH/CRITICAL)' &&
-      contains(github.event.issue.assignees.*.login, 'copilot-swe-agent')
-    runs-on: ubuntu-latest
+# jobs:
+#   execute-copilot-fix:
+#     # Only run when Copilot is assigned to an issue with the security fix title
+#     if: |
+#       github.event.issue.title == '🚨 Automated Security Fixes Required (HIGH/CRITICAL)' &&
+#       contains(github.event.issue.assignees.*.login, 'copilot-swe-agent')
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: ⬇️ Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+#     steps:
+#       - name: ⬇️ Checkout Repository
+#         uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
 
-      - name: ☕ Setup Java and Gradle
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: 'gradle'
+#       - name: ☕ Setup Java and Gradle
+#         uses: actions/setup-java@v4
+#         with:
+#           java-version: '21'
+#           distribution: 'temurin'
+#           cache: 'gradle'
 
-      - name: 🔒 Grant Execute Permission to gradlew
-        run: chmod +x ./gradlew
+#       - name: 🔒 Grant Execute Permission to gradlew
+#         run: chmod +x ./gradlew
 
-      - name: 📝 Add Comment to Issue
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: '🤖 **Copilot Auto-Executor Started**\n\nI am now processing this issue automatically. Will create a PR with fixes shortly...'
-            });
+#       - name: 📝 Add Comment to Issue
+#         uses: actions/github-script@v7
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           script: |
+#             await github.rest.issues.createComment({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               issue_number: context.issue.number,
+#               body: '🤖 **Copilot Auto-Executor Started**\n\nI am now processing this issue automatically. Will create a PR with fixes shortly...'
+#             });
 
-      - name: 🔍 Extract Dependency Info from Issue
-        id: parse_issue
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const issueBody = context.payload.issue.body;
-            // Extract package names and versions from the issue body
-            core.setOutput('has_fixes', 'true');
-            return true;
+#       - name: 🔍 Extract Dependency Info from Issue
+#         id: parse_issue
+#         uses: actions/github-script@v7
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           script: |
+#             const issueBody = context.payload.issue.body;
+#             // Extract package names and versions from the issue body
+#             core.setOutput('has_fixes', 'true');
+#             return true;
 
-      - name: 🚀 Execute Automated Fixes
-        id: fix
-        run: |
-          # Create a new branch
-          BRANCH_NAME="copilot-autofix-$(date +%Y%m%d-%H%M%S)"
-          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
-          git checkout -b $BRANCH_NAME
+#       - name: 🚀 Execute Automated Fixes
+#         id: fix
+#         run: |
+#           # Create a new branch
+#           BRANCH_NAME="copilot-autofix-$(date +%Y%m%d-%H%M%S)"
+#           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+#           git checkout -b $BRANCH_NAME
           
-          # Configure git
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+#           # Configure git
+#           git config user.name "github-actions[bot]"
+#           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          echo "Branch created: $BRANCH_NAME"
+#           echo "Branch created: $BRANCH_NAME"
 
-      - name: 🔧 Apply Dependency Updates
-        run: |
-          # This is where you'd parse the issue and apply fixes
-          # For now, we'll update to latest Spring Boot as example
+#       - name: 🔧 Apply Dependency Updates
+#         run: |
+#           # This is where you'd parse the issue and apply fixes
+#           # For now, we'll update to latest Spring Boot as example
           
-          # Read current build.gradle
-          if [ -f "build.gradle" ]; then
-            echo "Found build.gradle, analyzing..."
+#           # Read current build.gradle
+#           if [ -f "build.gradle" ]; then
+#             echo "Found build.gradle, analyzing..."
             
-            # Example: Update Spring Boot version (you can expand this)
-            # sed -i "s/spring-boot-starter-test'/spring-boot-starter-test'/" build.gradle
+#             # Example: Update Spring Boot version (you can expand this)
+#             # sed -i "s/spring-boot-starter-test'/spring-boot-starter-test'/" build.gradle
             
-            echo "Dependencies analyzed. Manual fixes may be needed."
-          fi
+#             echo "Dependencies analyzed. Manual fixes may be needed."
+#           fi
 
-      - name: 🧪 Run Tests
-        id: test
-        continue-on-error: true
-        run: |
-          ./gradlew clean build
-          echo "BUILD_STATUS=$?" >> $GITHUB_ENV
+#       - name: 🧪 Run Tests
+#         id: test
+#         continue-on-error: true
+#         run: |
+#           ./gradlew clean build
+#           echo "BUILD_STATUS=$?" >> $GITHUB_ENV
 
-      - name: 💾 Commit Changes
-        id: commit
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            git add .
-            git commit -m "fix: Update HIGH/CRITICAL dependencies and fix deprecated methods
+#       - name: 💾 Commit Changes
+#         id: commit
+#         run: |
+#           if [ -n "$(git status --porcelain)" ]; then
+#             git add .
+#             git commit -m "fix: Update HIGH/CRITICAL dependencies and fix deprecated methods
             
-            Automated fixes for security vulnerabilities.
-            Related to issue #${{ github.event.issue.number }}"
-            git push origin $BRANCH_NAME
-            echo "HAS_CHANGES=true" >> $GITHUB_ENV
-          else
-            echo "HAS_CHANGES=false" >> $GITHUB_ENV
-            echo "No changes detected"
-          fi
+#             Automated fixes for security vulnerabilities.
+#             Related to issue #${{ github.event.issue.number }}"
+#             git push origin $BRANCH_NAME
+#             echo "HAS_CHANGES=true" >> $GITHUB_ENV
+#           else
+#             echo "HAS_CHANGES=false" >> $GITHUB_ENV
+#             echo "No changes detected"
+#           fi
 
-      - name: 🎯 Create Pull Request
-        if: env.HAS_CHANGES == 'true'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const pr = await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: '🤖 Automated Security Fixes (HIGH/CRITICAL)',
-              head: process.env.BRANCH_NAME,
-              base: 'main',
-              body: `## 🛡️ Automated Security Fixes
+#       - name: 🎯 Create Pull Request
+#         if: env.HAS_CHANGES == 'true'
+#         uses: actions/github-script@v7
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           script: |
+#             const pr = await github.rest.pulls.create({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               title: '🤖 Automated Security Fixes (HIGH/CRITICAL)',
+#               head: process.env.BRANCH_NAME,
+#               base: 'main',
+#               body: `## 🛡️ Automated Security Fixes
             
-            This PR was automatically created to fix HIGH and CRITICAL severity vulnerabilities.
+#             This PR was automatically created to fix HIGH and CRITICAL severity vulnerabilities.
             
-            ### Related Issue
-            Closes #${{ github.event.issue.number }}
+#             ### Related Issue
+#             Closes #${{ github.event.issue.number }}
             
-            ### Changes Made
-            - Updated vulnerable dependencies
-            - Fixed deprecated method usages
-            - Verified build passes
+#             ### Changes Made
+#             - Updated vulnerable dependencies
+#             - Fixed deprecated method usages
+#             - Verified build passes
             
-            ### Build Status
-            ${process.env.BUILD_STATUS === '0' ? '✅ Build Successful' : '⚠️ Build may need attention'}
+#             ### Build Status
+#             ${process.env.BUILD_STATUS === '0' ? '✅ Build Successful' : '⚠️ Build may need attention'}
             
-            Please review the changes before merging.`
-            });
+#             Please review the changes before merging.`
+#             });
             
-            // Comment on the original issue
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: `✅ **Pull Request Created**: #${pr.data.number}\n\nPlease review and merge: ${pr.data.html_url}`
-            });
+#             // Comment on the original issue
+#             await github.rest.issues.createComment({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               issue_number: context.issue.number,
+#               body: `✅ **Pull Request Created**: #${pr.data.number}\n\nPlease review and merge: ${pr.data.html_url}`
+#             });
 
-      - name: ⚠️ Report Failure
-        if: env.HAS_CHANGES == 'false' || failure()
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: '❌ **Automated fix failed or no changes detected**\n\nManual intervention may be required. Please review the workflow logs for details.'
-            });
+#       - name: ⚠️ Report Failure
+#         if: env.HAS_CHANGES == 'false' || failure()
+#         uses: actions/github-script@v7
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           script: |
+#             await github.rest.issues.createComment({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               issue_number: context.issue.number,
+#               body: '❌ **Automated fix failed or no changes detected**\n\nManual intervention may be required. Please review the workflow logs for details.'
+#             });
 
